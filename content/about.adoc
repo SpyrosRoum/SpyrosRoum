@@ -1,0 +1,12 @@
+---
+title: "About"
+date: 2021-05-03T00:37:44+03:00
+draft: false
+---
+
+Hello and welcome to my blog! I'm Spyros and this is the place where I write about my ideas and my projects, or about anything else I want to. +
+What's the point of having a blog if you can't write whatever you want in it, right?
+
+I like linux and programing so most if not all of my posts will be related to one of these two.
+
+I support free and open source software, thus all my projects are open source and you can find them in my https://github.com/SpyrosRoum[github].

@@ -1,0 +1,99 @@
+baseURL = "https://SpyrosRoum.github.io/"
+title = "Spyro's Calling"
+theme = "fuji"
+
+hasCJKLanguage = true
+enableEmoji = true
+enableRobotsTXT = true
+disableKinds = ["taxonomy"]
+ignoreErrors = ["error-disable-taxonomy"]
+
+## Change this two to switch between different language
+languageCode = "en"  # For RSS, view https://www.rssboard.org/rss-language-codes
+defaultContentLanguage = "en"  # For HTML page, now support: en, zh-hans, zh-hant, ja, nl, pl
+
+summaryLength = 100
+paginate = 10
+
+[outputFormats]
+  [outputFormats.SearchIndex]
+    isPlainText = true
+    notAlternative = true
+    mediaType = "application/json"
+    path = "/search/"
+
+[outputs]
+  home = ["HTML", "RSS", "SearchIndex"]
+
+[permalinks]
+  post = "/:section/:filename/" # Custom post links, e.g. "/:year/:month/:title/"
+
+[params]
+  author = "Spyros Roum" # You can also set author in post front matter individually
+  subTitle = "I little blog about my projects and ideas"
+
+  # Source URL of the website, will appear in the footer
+  sourceURL = "https://github.com/SpyrosRoum/SpyrosRoum"
+
+  # Word counter and read time indicator in post metadata
+  showWordCounter = false
+  showReadTime = true
+
+  # License in the footer
+  showLicenseInFooter = false
+
+  # License at the end of each post
+  showLicense = false
+  showToc = false
+
+  # Copyright
+  copyrightStartYear = "2020"
+
+  # Open Graph & Twitter Card variables
+  # You can also set description and images in post front matter individually
+  description = "I little blog about my projects and ideas"
+
+  # Posts shown in homepage
+  mainSections = ["posts"]
+
+  # License
+  license = "CC BY-NC-SA 4.0"
+  licenseLink = "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+  [markup.highlight]
+    codeFences = false  # Disable Hugo's code highlighter
+
+  [markup.tableOfContents]
+    startLevel = 1
+    endLevel = 4
+
+[taxonomies]
+  tag = "tags"
+
+[menu]
+  [[menu.nav]]
+    name = "Posts"
+    url = "/"
+    weight = 10
+  [[menu.nav]]
+    name = "About"
+    url = "/about/"
+    weight = 20
+  [[menu.nav]]
+    name = "Search"
+    url = "/search/"
+    weight = 30
+  [[menu.nav]]
+    name = "RSS"
+    url = "/index.xml"
+    weight = 40
+
+  [[menu.link]]
+    name = "GitHub"
+    url = "https://github.com/SpyrosRoum"
+    weight = 10
