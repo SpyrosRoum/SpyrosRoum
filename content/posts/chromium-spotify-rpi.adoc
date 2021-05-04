@@ -474,7 +474,7 @@ One thing that I'd like to mention is that at first it was visible but I was una
 
 == Conclusion
 I have been using this set up for a couple of days now with no issues. +
-Netflix has a little screen tearing but nothign too bad so I am fine with it.
+Netflix has a little screen tearing but nothing too bad so I am fine with it.
 
 If I find any issues or rough edges I plan to make follow up posts with fixes and improvments.
 
