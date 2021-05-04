@@ -1,0 +1,177 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name=HandheldFriendly content="True"><meta http-equiv=x-ua-compatible content="IE=edge"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><meta name=generator content="Hugo 0.81.0"><link rel=apple-touch-icon sizes=180x180 href=/favicon/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon/favicon-16x16.png><link rel=manifest href=/favicon/site.webmanifest><link rel=mask-icon href=/favicon/safari-pinned-tab.svg color=#5bbad5><meta name=msapplication-TileColor content="#da532c"><meta name=theme-color content="#ffffff"><title>Make your TV a little smarter with a Raspberry Pi - Spyro's Calling</title><meta name=author content="Spyros Roum"><meta name=description content="I little blog about my projects and ideas"><meta name=keywords content="Raspberry Pi,Linux"><meta property="og:title" content="Make your TV a little smarter with a Raspberry Pi"><meta name=twitter:title content="Make your TV a little smarter with a Raspberry Pi"><meta property="og:type" content="article"><meta property="og:url" content="https://SpyrosRoum.github.io/posts/chromium-spotify-rpi/"><meta property="og:description" content="
+I got a Raspberry Pi 4 recently with the end goal of being able to use a browser, Spotify, stream Netflix, YouTube, and from my Jellyfin server.
+So here is how I did it.
+"><meta name=twitter:description content="
+I got a Raspberry Pi 4 recently with the end goal of being able to use a browser, Spotify, stream Netflix, YouTube, and from my Jellyfin server.
+So here is how I did it.
+"><meta name=twitter:card content="summary"><meta property="article:published_time" content="2021-05-03T11:56:37+03:00"><meta property="article:modified_time" content="2021-05-03T11:56:37+03:00"><style>@media(prefers-color-scheme:dark){body[data-theme=auto] img{filter:brightness(60%)}}body[data-theme=dark] img{filter:brightness(60%)}</style><link rel=stylesheet href=https://SpyrosRoum.github.io/assets/css/fuji.min.css></head><body data-theme=auto><script data-cfasync=false>var fujiThemeData=localStorage.getItem('fuji_data-theme');fujiThemeData?fujiThemeData!=='auto'&&document.body.setAttribute('data-theme',fujiThemeData==='dark'?'dark':'light'):localStorage.setItem('fuji_data-theme','auto')</script><header><div class="container-lg clearfix"><div class="col-12 header"><a class=title-main href=https://SpyrosRoum.github.io/>Spyro's Calling</a>
+<span class=title-sub>I little blog about my projects and ideas</span></div></div></header><main><div class="container-lg clearfix"><div class="col-12 col-md-9 float-left content"><article><h2 class="post-item post-title"><a href=https://SpyrosRoum.github.io/posts/chromium-spotify-rpi/>Make your TV a little smarter with a Raspberry Pi</a></h2><div class="post-item post-meta"><span><i class="iconfont icon-today-sharp"></i>&nbsp;2021-05-03</span>
+<span><i class="iconfont icon-time-sharp"></i>&nbsp;14 minutes</span>
+<span><i class="iconfont icon-pricetags-sharp"></i>&nbsp;<a href=/tags/raspberry-pi>Raspberry Pi</a>&nbsp;<a href=/tags/linux>Linux</a>&nbsp;</span></div><div class="post-content markdown-body"><div class=paragraph><p>I got a Raspberry Pi 4 recently with the end goal of being able to use a browser, Spotify, stream Netflix, YouTube, and from my <a href=https://jellyfin.org>Jellyfin</a> server.<br>So here is how I did it.</p></div><div class=sect1><h2 id=_intro>Intro</h2><div class=sectionbody><div class=paragraph><p>My first thought was to install <a href=https://kodi.tv>Kodi</a>.<br>A fine media player I thought, and with plugins for all my needs; so
+I decided to go with <a href=https://libreelec.tv>LibreELEC</a> because a Kodi developer suggested it to me.</p></div><div class=paragraph><p>Installation went smooth but unfortunately I didn’t really like the Kodi experience.<br>The interface was a bit choppy and setting up the plugins took so long that I gave up after a point.</p></div><div class=paragraph><p>I thought a little harder and came to the realization that all I really need is a web browser and a little something for Spotify.<br>I also take care of some other small things like handling media keys and a nice volume indicator.</p></div><div class=paragraph><p>There is no window manager or desktop environment because I wanted it to be as simple and lite as possible.</p></div></div></div><div class=sect1><h2 id=_what_you_will_need>What you will need</h2><div class=sectionbody><div class=ulist><ul><li><p>A Raspberry Pi (I got the Pi 4 4GB model but this should work just fine for others as well as long as they have a way to connect to a display)</p></li><li><p>Power Supply</p></li><li><p>An SD card</p></li><li><p>A micro HDMI to HDMI to connect a display</p></li><li><p>A Laptop or PC with a card reader</p></li><li><p>Optionally a case</p></li></ul></div><div class=paragraph><p>For extra points you want an ethernet cable but WiFi should be fine as well.</p></div></div></div><div class=sect1><h2 id=_installing_raspbian>Installing Raspbian</h2><div class=sectionbody><div class=sect2><h3 id=_writing_the_image_to_the_sd_card>Writing the image to the SD card</h3><div class=paragraph><p><a href=https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit>Raspbian</a> is an operating system based on Debian and made for the Raspberry Pi.
+The easiest way is to download the <a href=https://www.raspberrypi.org/software/>Raspberry Pi Imager</a> and install the <strong>32bit lite</strong> version of Raspbian.</p></div><div class="admonitionblock warning"><table><tbody><tr><td class=icon><div class=title>Warning</div></td><td class=content>You need the 32bit version even for 64bit devices, otherwise netflix won’t work.<br>In fact anything that needs widevincecdm (DRM) won’t work, so most media streaming services.</td></tr></tbody></table></div><div class=paragraph><p>After writing the image to the sd card, pop the card in the pi and boot it.</p></div></div></div></div><div class=sect1><h2 id=_initial_set_up>Initial Set Up</h2><div class=sectionbody><div class=paragraph><p>When the Pi boots you want to login, the default user is <code>pi</code> and the password is <code>raspberry</code>.</p></div><div class=sect2><h3 id=_raspi_config>raspi-config</h3><div class=exampleblock><div class=content><div class=paragraph><p><code>raspi-config</code> is a tool that helps you configure your Pi, we will use it a couple of times in this guide.</p></div><div class=paragraph><p>To start it just run <code>sudo raspi-config</code></p></div></div></div><div class=paragraph><p>First change the password to something more secure: <code>System Options</code> → <code>Password</code></p></div><div class=paragraph><p>For the Hostname go to <code>System Options</code> → <code>Hostname</code> and enter something to identify your pc (ie <code>htpc</code> for <strong>H</strong>ome <strong>T</strong>heater <strong>PC</strong>)</p></div><div class=paragraph><p>Next we want to enable auto login so <code>System Options</code> → <code>Boot / Auto Login</code> and select the second option, <code>Console Autologin</code></p></div><div class=paragraph><p>Set up time zone from <code>Localisation Options</code> → <code>Timezone</code>, and if you are planning to use WiFi, set your country from <code>Localisation Options</code> → <code>WLAN Country</code></p></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><div class=title>Tip</div></td><td class=content>Optionally enable ssh from <code>Interface Options</code> → <code>SSH</code> so you can edit configs and copy paste things remotely</td></tr></tbody></table></div><div class=paragraph><p>If you see black borders around the screen try toggling the <code>Display Options</code> → <code>Underscan</code> setting and rebooting.</p></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><div class=title>Tip</div></td><td class=content>You can reboot by running <code>sudo reboot</code></td></tr></tbody></table></div></div><div class=sect2><h3 id=_wifi>WiFi</h3><div class=exampleblock><div class=content><div class=paragraph><p>If you are using an ethernet cable you can skip this.<br>In the menu go to <code>System Options</code> → <code>Wireless LAN</code> and connect to your WiFi.</p></div></div></div><div class=paragraph><p>At this point I suggest rebooting to make sure things work and the settings have applied.</p></div></div><div class=sect2><h3 id=_using_ssh>Using SSH</h3><div class=paragraph><p>If you enabled ssh in the previous step and you want to use it, run <code>ip a</code> to find out the pi’s local ip address. You are looking for something like <code>192.168.X.X</code>.<br>If you are using ethernet look under <code>eth0</code>, if you are using WiFi then it will be under <code>wlan0</code>.</p></div><div class=paragraph><p><span class=image><img src=/images/post_01_01_ip.png alt="`ip a` example image"></span><br>When you have the ip you can ssh into it from another pc in the local network.<br>Just remember that the user name is <code>pi</code> and the password is whatever you set it to be earlier (or <code>raspberry</code> in case you didn’t change it).</p></div></div></div></div><div class=sect1><h2 id=_x_server_pulseaudio>X server & Pulseaudio</h2><div class=sectionbody><div class=paragraph><p>X server is needed for GUI applications but doesn’t come with the lite image so lets install it:<br><code>sudo apt install xserver-xorg-video-all xserver-xorg-input-all xserver-xorg-core xinit x11-xserver-utils</code></p></div><div class=paragraph><p>I like Pulseaudio more than alsa so I’m gonna install and use that.<br><code>sudo apt install pulseaudio pulsemixer</code><br>pulsemixer is a tool we will use to control volume and also set the audio output.<br>Now that we installed pulseaudio we also want to enable it for our user:<br><code>systemctl --user enable --now pulseaudio</code></p></div></div></div><div class=sect1><h2 id=_chromium>Chromium</h2><div class=sectionbody><div class=paragraph><p>When it comes to arm based computers your browser options are a little limited.<br>Chromium provides prebuilt binaries and supports DRM protected content so we will go with that.<br><code>sudo apt install chromium-browser</code></p></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><div class=title>Note</div></td><td class=content>There are two packages, <code>chromium</code> and <code>chromium-browser</code>, we want the latter</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_installing_utilities>Installing utilities</h2><div class=sectionbody><div class=paragraph><p>At this point we will install some tools that we will need later:<br><code>sudo apt install git sxhkd dunst unclutter libwidevinecdm0</code><br></p></div><div class=ulist><ul><li><p><code>git</code>: We will need to clone a repo later</p></li><li><p><code>sxhkd</code>: This is the hotkey deamon that allows us to handle the media keys on most keyboards</p></li><li><p><code>dunst</code>: A notification deamon that we will use for displaying the volume</p></li><li><p><code>unclutter</code>: This is a tool that hides the cursor</p></li><li><p><code>libwidevinecdm0</code>: This is needed for DRM protected content</p></li></ul></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><div class=title>Tip</div></td><td class=content>You should also install your preferred command line text editor at this point because we will be doing some writing, or copy pasting if you are using ssh</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_setting_up_utilities>Setting up utilities</h2><div class=sectionbody><div class=paragraph><p>I will be using <code>vim</code> for editing files but an easier option to use is probably <code>nano</code> so if you want replace <code>vim</code> with <code>nano</code></p></div><div class=sect2><h3 id=_sxhkd>sxhkd</h3><div class=paragraph><p>We will start by writing the config file for sxhkd.<br></p></div><div class=listingblock><div class=title>So open the config file:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ mkdir -p ~/.config/sxhkd
+$ cd ~/.config/sxhkd
+$ vim sxhkdrc</code></pre></div></div><div class=listingblock><div class=title>And write</div><div class=content><pre class=highlight><code># Raise/Lower volume
+XF86Audio{Raise,Lower}Volume
+    changeVolume --change-volume {+,-}5 --unmute
+
+XF86AudioMute
+    changeVolume --toggle-mute
+
+super + x
+    xkill</code></pre></div></div><div class=paragraph><p>This will allow us to use volume up/down and mute keys.<br>Also when pressing <code>super + x</code> (aka win key + x) it will run <code>xkill</code>, a program that we can use to click at an unwanted window and close it (for example a pop up)</p></div></div><div class=sect2><h3 id=_dunst>dunst</h3><div class=listingblock><div class=title>While dunst doesn’t <em>need</em> any configuration, I find that the default font size and colors are not to my liking so I will change them:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ mkdir -p ~/.config/dunst/dunstrc
+$ vim ~/.config/dunst/dunstrc</code></pre></div></div><div class=listingblock><div class=title>The config is a little long. Mine is based on the default config that ships on Arch linux</div><div class=content><pre>[global]
+    font = Monospace 26
+    monitor = 0
+    follow = mouse
+    geometry = &#34;0x4-25+25&#34;
+    indicate_hidden = yes
+    shrink = no
+    transparency = 0
+    notification_height = 0
+    separator_height = 1
+    padding = 8
+    horizontal_padding = 10
+    frame_width = 0
+    frame_color = &#34;#282a36&#34;
+    separator_color = frame
+    sort = yes
+    idle_threshold = 0
+    line_height = 0
+    markup = full
+    format = &#34;%s %p\n%b&#34;
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = 60
+    word_wrap = yes
+    ellipsize = middle
+    ignore_newline = no
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+    icon_position = left
+    min_icon_size = 0
+    max_icon_size = 64
+    icon_path = /usr/share/icons/gnome/16x16/status/:/usr/share/icons/gnome/16x16/devices/
+    sticky_history = yes
+    history_length = 20
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    startup_notification = false
+    verbosity = mesg
+    corner_radius = 0
+    ignore_dbusclose = false
+    force_xinerama = false
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_all
+    mouse_right_click = close_current
+
+[experimental]
+    per_monitor_dpi = false
+
+[shortcuts]
+    close = ctrl+space
+    close_all = ctrl+shift+space
+    history = ctrl+shift+grave
+    context = ctrl+shift+period
+
+[urgency_low]
+    background = &#34;#282a36&#34;
+    foreground = &#34;#6272a4&#34;
+    timeout = 10
+
+[urgency_normal]
+    background = &#34;#282a36&#34;
+    foreground = &#34;#bd93f9&#34;
+    timeout = 10
+
+[urgency_critical]
+    background = &#34;#ff5555&#34;
+    foreground = &#34;#f8f8f2&#34;
+    timeout = 0</pre></div></div><div class=paragraph><p>I’ve set a font size of 26, you might want to play with it to find what works for you. The setting is in the second line, <code>font = Monospace 26</code></p></div></div><div class=sect2><h3 id=_changevolume>changeVolume</h3><div class=paragraph><p><code>changeVolume</code> is a script that we will allow us to change the volume and also display a volume indicator</p></div><div class=listingblock><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ mkdir -p ~/.local/bin
+$ cd ~/.local/bin
+$ touch changeVolume # Create the file
+$ chmod +x changeVolume # Make it executable
+$ vim changeVolume</code></pre></div></div><div class=listingblock><div class=title>The script is based on a <a href=https://wiki.archlinux.org/title/Dunst#Using_dunstify_as_volume/brightness_level_indicator>script from the Arch wiki</a>, just slightly modified</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>#!/bin/bash
+# changeVolume
+
+# Arbitrary but unique message id
+msgId=&#34;991049&#34;
+
+# Change the volume using pulsemixer
+pulsemixer &#34;$@&#34; &gt; /dev/null
+
+# Use pulemixer to get current volume and if it&#39;s muted or not
+volume=&#34;$(pulsemixer --get-volume | grep -o &#34;^[0-9]*&#34;)&#34;
+mute=&#34;$(pulsemixer --get-mute)&#34;
+
+if [[ $volume == 0 || &#34;$mute&#34; == &#34;1&#34; ]]; then
+    # Show the sound muted notification
+    dunstify -a &#34;changeVolume&#34; -u low -i audio-volume-muted -r &#34;$msgId&#34; &#34;Volume Muted&#34;
+else
+    # Show the volume notification
+    dunstify -a &#34;changeVolume&#34; -u low -i audio-volume-high -r &#34;$msgId&#34; &#34;Volume: ${volume}%&#34;
+fi</code></pre></div></div><div class=paragraph><p>You might notice that we use two things, <code>pulsemixer</code> that we installed earlier to interact with pulseaudio, and <code>dunstify</code>.</p></div></div><div class=sect2><h3 id=_dunstify>dunstify</h3><div class=paragraph><p><code>dunstify</code> is a tool similar to <code>notify-send</code>, just specific to dunst and with some extra features.<br>Unfortunately it’s not available in the repos and it doesn’t come with dunst so we will have to build it ourselves.</p></div><div class=listingblock><div class=title>Luckily it’s very easy and fast to do:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ # First install its dependencies
+$ sudo apt install libdbus-1-dev libx11-dev libxinerama-dev libxrandr-dev libxss-dev libglib2.0-dev libpango1.0-dev libgtk-3-dev libxdg-basedir-dev libnotify-dev
+$ # I like to clone and build everything from github in a specific place:
+$ mkdir ~/build
+$ cd ~/build
+$ git clone https://github.com/dunst-project/dunst.git
+$ cd dunst
+$ make dunstify
+$ cp -vs $(pwd)/dunstify ~/.local/bin/</code></pre></div></div><div class=paragraph><p>And done, now you have <code>dunstify</code>.</p></div></div></div></div><div class=sect1><h2 id=_bring_everything_together>Bring Everything Together</h2><div class=sectionbody><div class=paragraph><p>All the pieces are now in place, we just have to put them together.</p></div><div class=paragraph><p>When you log in a few things happen. Specifically a script named <code>.profile</code> located in your home directory gets executed. We are going to take advantage of that by telling it to run a command, <code>startx</code>. This command starts the X server and runs another script <code>.xinitrc</code>, also located in your home directory.</p></div><div class=sect2><h3 id=_profile>.profile</h3><div class=listingblock><div class=title>Enough with the words, lets actually do the work:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ vim ~/.profile</code></pre></div></div><div class=listingblock><div class=title>You will see that the profile is not empty, we just want to append something at the end of it, specifically this:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>if  [[ -z $DISPLAY ]] &amp;&amp; [[ $(tty) = /dev/tty1 ]]; then
+    startx
+fi</code></pre></div></div><div class=paragraph><p>This means that if there is a display connected and we are in tty1, then run <code>startx</code>.<br></p></div></div><div class=sect2><h3 id=_xinitrc>.xinitrc</h3><div class=listingblock><div class=title>Like I Said <code>startx</code> run a script called <code>.xinitrc</code>, so lets write that next:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ vim ~/.xinitrc</code></pre></div></div><div class=listingblock><div class=title>And enter the following:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>#!/bin/sh
+
+[ -f /etc/xprofile ] &amp;&amp; . /etc/xprofile
+[ -f ~/.xprofile ] &amp;&amp; . ~/.xprofile
+
+xset -dpms
+xset s off
+xset s noblank
+
+# No warnings about chromium crashing
+sed -i &#39;s/&#34;exited_cleanly&#34;:false/&#34;exited_cleanly&#34;:true/&#39; /home/pi/.config/chromium/Default/Preferences
+sed -i &#39;s/&#34;exit_type&#34;:&#34;Crashed&#34;/&#34;exit_type&#34;:&#34;Normal&#34;/&#39; /home/pi/.config/chromium/Default/Preferences
+
+while true; do
+    chromium-browser --window-size=1920,1080 --window-position=0,0 --disable-translate --disable-features=TranslateUI --enable-widevine --password-store=basic --user-agent=&#34;Mozilla/5.0 (X11; CrOS armv7l 12371.89.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36&#34;
+done</code></pre></div></div><div class=listingblock><div class=title>There are a few things going on here so lets go step by step:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>[ -f /etc/xprofile ] &amp;&amp; . /etc/xprofile
+[ -f ~/.xprofile ] &amp;&amp; . ~/.xprofile</code></pre></div></div><div class=paragraph><p>This checks if two files exist (<code>/etc/xprofile</code> and <code>~/.xprofile</code>), and if they exists runs them. We will take advantage of this in a bit to auto start some things.</p></div><div class=listingblock><div class=content><pre class=highlight><code class=language-shell data-lang=shell>xset -dpms
+xset s off
+xset s noblank</code></pre></div></div><div class=paragraph><p>This disables the energy features of the X server, specifically it makes the screen stay on and not black out after some time.</p></div><div class=listingblock><div class=content><pre class=highlight><code class=language-shell data-lang=shell># No warnings about chromium crashing
+sed -i &#39;s/&#34;exited_cleanly&#34;:false/&#34;exited_cleanly&#34;:true/&#39; /home/pi/.config/chromium/Default/Preferences
+sed -i &#39;s/&#34;exit_type&#34;:&#34;Crashed&#34;/&#34;exit_type&#34;:&#34;Normal&#34;/&#39; /home/pi/.config/chromium/Default/Preferences</code></pre></div></div><div class=paragraph><p>Like the comment says, this stops chromium from complaining about not closing properly (for example if you take the Pi out of power while the browser is running).</p></div><div class=listingblock><div class=content><pre class=highlight><code class=language-shell data-lang=shell>while true; do
+    chromium-browser --window-size=1920,1080 --window-position=0,0 --disable-translate --disable-features=TranslateUI --enable-widevine --password-store=basic --user-agent=&#34;Mozilla/5.0 (X11; CrOS armv7l 12371.89.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36&#34;
+done</code></pre></div></div><div class=paragraph><p>This runs chromium in a loop. It’s in a loop so that if you accidentally close all the tabs, the browser will just start again instead of dropping you to a terminal.</p></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><div class=title>Tip</div></td><td class=content>If you need to access a terminal but can’t because the browser is running, use <code>ctrl + alt + f2</code> to go to the second tty and log in</td></tr></tbody></table></div><div class=ulist><div class=title>Now lets take a look at some of the arguments we passed at it:</div><ul><li><p><code>--window-size</code>: The size the browser will have. My TV is 1920x1080 but you should set it to your display’s resolution</p></li><li><p><code>--window-position=0,0</code>: I found that by default it doesn’t start at the top left corner, so this fixes that</p></li><li><p><code>--disable-translate</code> and <code>--disable-features=TranslateUI</code>: I find annoying the constant offering of translating sites so this turns that off</p></li><li><p><code>--user-agent</code>: You might find this weird but it’s necessary for viewing DRM protected content. It essentially makes chromium think it’s running under ChromeOS</p></li></ul></div></div><div class=sect2><h3 id=_xprofile>.xprofile</h3><div class=paragraph><p><code>.xprofile</code> is similar to <code>.profile</code> but instead of runs when the X server starts (well, we made it start in .xinitrc)</p></div><div class=listingblock><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ vim ~/.xprofile</code></pre></div></div><div class=listingblock><div class=title>And we just want to start a few of the programs we installed earlier:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>#!/bin/sh
+
+dunst &amp;
+sxhkd &amp;
+unclutter -idle 0.5 -root &amp;</code></pre></div></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><div class=title>Note</div></td><td class=content>You might notice the following <code>&</code> after each line.<br>This is so it starts the program and then moves on to the next one, it doesn’t wait for the program to end because in this case they never will</td></tr></tbody></table></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><div class=title>Note</div></td><td class=content><code>unclutter -idle 0.5 -root</code> means that after 0.5 seconds of idling the cursor will disappear even if it’s over the root window (meaning not over chromium)</td></tr></tbody></table></div></div></div></div><div class=sect1><h2 id=_smooth_playback>Smooth playback</h2><div class=sectionbody><div class=paragraph><p>We are almost ready, one issue is that if you try to run chromium and watch something now, it will have a lot of screen tearing. Luckily the fix (although not perfect) is easy.<br></p></div><div class=paragraph><div class=title>First of all we want to run raspi-config and disable the compositor:</div><p><code>sudo raspi-config</code> → <code>Advanced Options</code> → <code>Compositor</code> → "No"</p></div><div class=paragraph><p>Then reboot to apply the setting update.<br>Once the Pi boots it should auto start chromium and everything else we told it too.<br>To improve the playback a bit more install <a href=https://chrome.google.com/webstore/detail/h264ify/aleakchihdccplidncghkekgioiakgal>this</a> extension, then find it on the top right and enable <code>Block 60fps</code></p></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><div class=title>Tip</div></td><td class=content>Now that we are here I also suggest <a href=https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm>this</a> for the ads, and <a href=https://chrome.google.com/webstore/detail/tabliss-a-beautiful-new-t/hipekcciheckooncpjeljhnekcoolahp>this</a> to make it a little prettier</td></tr></tbody></table></div><div class=paragraph><p>Congratulations! At this point you should be able to enjoy anything on the web with no issues.<br></p></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><div class=title>Note</div></td><td class=content>If you have no sound then either over ssh or on tty 2 run <code>pulsemixer</code> and change the audio output.<br>If you still don’t have sound and you are using hdmi, for me only the port next to the power in had audio.</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_spotify>Spotify</h2><div class=sectionbody><div class=paragraph><p>The other goal of this adventure is to be able to use spotify.<br>A very popular solution to this is to use <a href=https://github.com/dtcooper/raspotify>raspotify</a>.<br>I’ve used it in the past and it works really well but I decided to try something new: <a href=https://github.com/spocon/lovspotify>lovspotify</a>.</p></div><div class=paragraph><p>Lovspotify is very similar to raspotify, only that it also gives you a web interface which I thought might be nice, (and it is!)</p></div><div class=paragraph><p>They even provide a one liner for easy installation, so just run<br><code>curl -sL <a href=https://spocon.github.io/spocon/script/install_lovspotify.sh class=bare>https://spocon.github.io/spocon/script/install_lovspotify.sh</a> | sh</code></p></div><div class=paragraph><p>You can check that lovspotify is running using systemctl:<br><code>systemctl status lovspotify</code></p></div><div class=paragraph><p>Now unfortunately I have found that this is not enough.<br>Since pulseaudio is a user service, it doesn’t start system wide and it makes lovspotify not detect all the outputs.
+If you are using the 3.5 jack as an output you might be okay with that, but I’m using the HDMI so I will have to fix this.</p></div><div class=sect2><h3 id=_fix_lovspotify_only_outputting_from_the_3_5_jack>Fix lovspotify only outputting from the 3.5 jack</h3><div class=listingblock><div class=title>Essentially we need to make it a user service:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>$ # Start by disabling it:
+$ sudo systemctl disable --now lovspotify
+$ # Next create the dir for the user services:
+$ mkdir -p ~/.config/systemd/user/
+$ cd ~/.config/systemd/user/
+$ vim lovspotify.service</code></pre></div></div><div class=listingblock><div class=title>And this is what we want to write there:</div><div class=content><pre class=highlight><code class=language-shell data-lang=shell>[Unit]
+Description=lovspotify
+Wants=pulseaudio.service
+After=pulseaudio.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+PermissionsStartOnly=true
+WorkingDirectory=/opt/lovspotify
+ExecStartPre=/bin/sh -c &#39;until ping -c1 spotify.com; do sleep 5; done;&#39;
+ExecStart=/usr/bin/java -Dspring.config.location=classpath:application.yml,file:///opt/lovspotify/gui.yml -jar /opt/lovspotify/lovspotify-1.5.4.jar --conf-file=/opt/lovspotify/config.toml
+
+[Install]
+WantedBy=default.target</code></pre></div></div><div class=paragraph><p>If we try to start it now we will see an error.<br>The error is that lovspotify uses a directory for cache and the pi user doesn’t have permission to use this directory.<br>To fix this start by creating a new directory in the home directory:<br><code>mkdir -p ~/.cache/lovspotify</code></p></div><div class=paragraph><p>Next edit the config file and change the relevant setting<br><code>sudo vim /opt/lovspotify/config.toml</code></p></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><div class=title>Note</div></td><td class=content>You need root access to edit this file so don’t forget the <code>sudo</code></td></tr></tbody></table></div><div class=paragraph><p>Change line 14 (under <code>cache</code>) to read <code>dir = "/home/pi/.cache/lovspotify"</code></p></div><div class=paragraph><p>You should also take a look at the rest of the settings here and even log in to your account.</p></div><div class=paragraph><p>Next enable and start the service:<br><code>systemctl enable --now lovspotify</code></p></div><div class=paragraph><p>And that should be it!</p></div><div class=paragraph><p>One thing that I’d like to mention is that at first it was visible but I was unable to connect. Luckily this fixed it self after a few hours of me doing nothing.</p></div></div></div></div><div class=sect1><h2 id=_conclusion>Conclusion</h2><div class=sectionbody><div class=paragraph><p>I have been using this set up for a couple of days now with no issues.<br>Netflix has a little screen tearing but nothign too bad so I am fine with it.</p></div><div class=paragraph><p>If I find any issues or rough edges I plan to make follow up posts with fixes and improvments.</p></div><div class=paragraph><p>If you are wondering what else you can do with your Raspberry, I suggest taking a look at <a href=https://pi-hole.net/>Pi-hole</a>.<br>It’s super easy to install and it barely consumes any resources.</p></div></div></div></div></article></div><aside class="col-12 col-md-3 float-left sidebar"><div class="sidebar-item sidebar-pages"><h3>Pages</h3><ul><li><a href=/>Posts</a></li><li><a href=/about/>About</a></li><li><a href=/search/>Search</a></li><li><a href=/index.xml>RSS</a></li></ul></div><div class="sidebar-item sidebar-links"><h3>Links</h3><ul><li><a href=https://github.com/SpyrosRoum target=_blank><span>GitHub</span></a></li></ul></div><div class="sidebar-item sidebar-tags"><h3>Tags</h3><div><span><a href=/tags/linux/>Linux</a></span>
+<span><a href=/tags/raspberry-pi/>Raspberry Pi</a></span></div></div></aside></div><div class=btn><div class=btn-menu id=btn-menu><i class="iconfont icon-grid-sharp"></i></div><div class=btn-toggle-mode><i class="iconfont icon-contrast-sharp"></i></div><div class=btn-scroll-top><i class="iconfont icon-chevron-up-circle-sharp"></i></div></div><aside class=sidebar-mobile style=display:none><div class=sidebar-wrapper><div class="sidebar-item sidebar-pages"><h3>Pages</h3><ul><li><a href=/>Posts</a></li><li><a href=/about/>About</a></li><li><a href=/search/>Search</a></li><li><a href=/index.xml>RSS</a></li></ul></div><div class="sidebar-item sidebar-links"><h3>Links</h3><ul><li><a href=https://github.com/SpyrosRoum target=_blank><span>GitHub</span></a></li></ul></div><div class="sidebar-item sidebar-tags"><h3>Tags</h3><div><span><a href=/tags/linux/>Linux</a></span>
+<span><a href=/tags/raspberry-pi/>Raspberry Pi</a></span></div></div></div></aside></main><footer><div class="container-lg clearfix"><div class="col-12 footer"><span>&copy; 2020-2021
+<a href=https://SpyrosRoum.github.io/>Spyros Roum</a>
+| <a href=https://github.com/SpyrosRoum/SpyrosRoum>Source code</a>
+| Powered by <a href=https://github.com/dsrkafuu/hugo-theme-fuji/ target=_blank>Fuji-v2</a> & <a href=https://gohugo.io/ target=_blank>Hugo</a></span></div></div></footer><script defer src=https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js></script><script defer src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.0/lazysizes.min.js></script><script defer src=https://cdn.jsdelivr.net/npm/prismjs@1.23.0/components/prism-core.min.js></script><script defer src=https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/autoloader/prism-autoloader.min.js></script><script defer src=/assets/js/fuji.min.js></script></body></html>
