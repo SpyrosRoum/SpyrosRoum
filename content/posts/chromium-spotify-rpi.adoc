@@ -1,0 +1,482 @@
+---
+title: "Make your TV a little smarter with a Raspberry Pi"
+date: 2021-05-03T11:56:37+03:00
+draft: false
+tags: ["Raspberry Pi", "Linux"]
+:author: Spyros Roum
+:source-language: shell
+:source-highlighter: pygments
+---
+
+I got a Raspberry Pi 4 recently with the end goal of being able to use a browser, Spotify, stream Netflix, YouTube, and from my https://jellyfin.org[Jellyfin] server. +
+So here is how I did it.
+
+<!--more-->
+
+== Intro
+My first thought was to install https://kodi.tv[Kodi]. +
+A fine media player I thought, and with plugins for all my needs; so
+I decided to go with https://libreelec.tv[LibreELEC] because a Kodi developer suggested it to me.
+
+Installation went smooth but unfortunately I didn't really like the Kodi experience. +
+The interface was a bit choppy and setting up the plugins took so long that I gave up after a point.  
+
+I thought a little harder and came to the realization that all I really need is a web browser and a little something for Spotify. +
+I also take care of some other small things like handling media keys and a nice volume indicator.
+
+There is no window manager or desktop environment because I wanted it to be as simple and lite as possible.
+
+== What you will need
+* A Raspberry Pi (I got the Pi 4 4GB model but this should work just fine for others as well as long as they have a way to connect to a display)
+* Power Supply
+* An SD card
+* A micro HDMI to HDMI to connect a display
+* A Laptop or PC with a card reader
+* Optionally a case
+
+For extra points you want an ethernet cable but WiFi should be fine as well.
+
+== Installing Raspbian
+=== Writing the image to the SD card
+https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit[Raspbian] is an operating system based on Debian and made for the Raspberry Pi.
+The easiest way is to download the https://www.raspberrypi.org/software/[Raspberry Pi Imager] and install the *32bit lite* version of Raspbian.
+
+WARNING: You need the 32bit version even for 64bit devices, otherwise netflix won't work. +
+In fact anything that needs widevincecdm (DRM) won't work, so most media streaming services.
+
+After writing the image to the sd card, pop the card in the pi and boot it. 
+
+== Initial Set Up
+When the Pi boots you want to login, the default user is `pi` and the password is `raspberry`.
+
+=== raspi-config
+====
+`raspi-config` is a tool that helps you configure your Pi, we will use it a couple of times in this guide.
+
+To start it just run `sudo raspi-config`
+====
+
+First change the password to something more secure: `System Options` -> `Password`
+
+For the Hostname go to `System Options` -> `Hostname` and enter something to identify your pc (ie `htpc` for **H**ome **T**heater **PC**)
+
+Next we want to enable auto login so `System Options` -> `Boot / Auto Login` and select the second option, `Console Autologin`
+
+Set up time zone from `Localisation Options` -> `Timezone`, and if you are planning to use WiFi, set your country from `Localisation Options` -> `WLAN Country`
+
+TIP: Optionally enable ssh from `Interface Options` -> `SSH` so you can edit configs and copy paste things remotely 
+
+If you see black borders around the screen try toggling the `Display Options` -> `Underscan` setting and rebooting.
+
+TIP: You can reboot by running `sudo reboot`
+
+=== WiFi
+====
+If you are using an ethernet cable you can skip this. +
+In the menu go to `System Options` -> `Wireless LAN` and connect to your WiFi.
+====
+
+At this point I suggest rebooting to make sure things work and the settings have applied.
+
+=== Using SSH
+If you enabled ssh in the previous step and you want to use it, run `ip a` to find out the pi's local ip address. You are looking for something like `192.168.X.X`. +
+If you are using ethernet look under `eth0`, if you are using WiFi then it will be under `wlan0`.
+
+image:/images/post_01_01_ip.png["`ip a` example image"] +
+When you have the ip you can ssh into it from another pc in the local network. +
+Just remember that the user name is `pi` and the password is whatever you set it to be earlier (or `raspberry` in case you didn't change it).
+
+== X server & Pulseaudio
+X server is needed for GUI applications but doesn't come with the lite image so lets install it: +
+`sudo apt install xserver-xorg-video-all xserver-xorg-input-all xserver-xorg-core xinit x11-xserver-utils`
+
+I like Pulseaudio more than alsa so I'm gonna install and use that. +
+`sudo apt install pulseaudio pulsemixer` +
+pulsemixer is a tool we will use to control volume and also set the audio output. +
+Now that we installed pulseaudio we also want to enable it for our user: +
+`systemctl --user enable --now pulseaudio`
+
+== Chromium
+When it comes to arm based computers your browser options are a little limited. +
+Chromium provides prebuilt binaries and supports DRM protected content so we will go with that. +
+`sudo apt install chromium-browser` 
+
+NOTE: There are two packages, `chromium` and `chromium-browser`, we want the latter
+
+== Installing utilities
+At this point we will install some tools that we will need later: +
+`sudo apt install git sxhkd dunst unclutter libwidevinecdm0` +
+
+* `git`: We will need to clone a repo later
+* `sxhkd`: This is the hotkey deamon that allows us to handle the media keys on most keyboards
+* `dunst`: A notification deamon that we will use for displaying the volume
+* `unclutter`: This is a tool that hides the cursor
+* `libwidevinecdm0`: This is needed for DRM protected content
+
+TIP: You should also install your preferred command line text editor at this point because we will be doing some writing, or copy pasting if you are using ssh
+
+== Setting up utilities
+I will be using `vim` for editing files but an easier option to use is probably `nano` so if you want replace `vim` with `nano`
+
+=== sxhkd
+We will start by writing the config file for sxhkd. +
+
+.So open the config file:
+[source,shell]
+$ mkdir -p ~/.config/sxhkd
+$ cd ~/.config/sxhkd
+$ vim sxhkdrc
+
+.And write
+[source]
+----
+# Raise/Lower volume
+XF86Audio{Raise,Lower}Volume
+    changeVolume --change-volume {+,-}5 --unmute
+
+XF86AudioMute
+    changeVolume --toggle-mute
+    
+super + x
+    xkill
+----
+
+This will allow us to use volume up/down and mute keys. +
+Also when pressing `super + x` (aka win key + x) it will run `xkill`, a program that we can use to click at an unwanted window and close it (for example a pop up)
+
+=== dunst
+.While dunst doesn't _need_ any configuration, I find that the default font size and colors are not to my liking so I will change them:
+[source, shell]
+$ mkdir -p ~/.config/dunst/dunstrc
+$ vim ~/.config/dunst/dunstrc
+
+.The config is a little long. Mine is based on the default config that ships on Arch linux
+----
+[global]
+    font = Monospace 26
+    monitor = 0
+    follow = mouse
+    geometry = "0x4-25+25"
+    indicate_hidden = yes
+    shrink = no
+    transparency = 0
+    notification_height = 0
+    separator_height = 1
+    padding = 8
+    horizontal_padding = 10
+    frame_width = 0
+    frame_color = "#282a36"
+    separator_color = frame
+    sort = yes
+    idle_threshold = 0
+    line_height = 0
+    markup = full
+    format = "%s %p\n%b"
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = 60
+    word_wrap = yes
+    ellipsize = middle
+    ignore_newline = no
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+    icon_position = left
+    min_icon_size = 0
+    max_icon_size = 64
+    icon_path = /usr/share/icons/gnome/16x16/status/:/usr/share/icons/gnome/16x16/devices/
+    sticky_history = yes
+    history_length = 20
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    startup_notification = false
+    verbosity = mesg
+    corner_radius = 0
+    ignore_dbusclose = false
+    force_xinerama = false
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_all
+    mouse_right_click = close_current
+
+[experimental]
+    per_monitor_dpi = false
+
+[shortcuts]
+    close = ctrl+space
+    close_all = ctrl+shift+space
+    history = ctrl+shift+grave
+    context = ctrl+shift+period
+
+[urgency_low]
+    background = "#282a36"
+    foreground = "#6272a4"
+    timeout = 10
+
+[urgency_normal]
+    background = "#282a36"
+    foreground = "#bd93f9"
+    timeout = 10
+
+[urgency_critical]
+    background = "#ff5555"
+    foreground = "#f8f8f2"
+    timeout = 0
+----
+I've set a font size of 26, you might want to play with it to find what works for you. The setting is in the second line, `font = Monospace 26`
+
+=== changeVolume
+`changeVolume` is a script that we will allow us to change the volume and also display a volume indicator
+
+[source,shell]
+$ mkdir -p ~/.local/bin
+$ cd ~/.local/bin
+$ touch changeVolume # Create the file
+$ chmod +x changeVolume # Make it executable
+$ vim changeVolume
+
+.The script is based on a https://wiki.archlinux.org/title/Dunst#Using_dunstify_as_volume/brightness_level_indicator[script from the Arch wiki], just slightly modified 
+[source,shell]
+----
+#!/bin/bash
+# changeVolume
+
+# Arbitrary but unique message id
+msgId="991049"
+
+# Change the volume using pulsemixer
+pulsemixer "$@" > /dev/null
+
+# Use pulemixer to get current volume and if it's muted or not
+volume="$(pulsemixer --get-volume | grep -o "^[0-9]*")"
+mute="$(pulsemixer --get-mute)"
+
+if [[ $volume == 0 || "$mute" == "1" ]]; then
+    # Show the sound muted notification
+    dunstify -a "changeVolume" -u low -i audio-volume-muted -r "$msgId" "Volume Muted"
+else
+    # Show the volume notification
+    dunstify -a "changeVolume" -u low -i audio-volume-high -r "$msgId" "Volume: ${volume}%"
+fi
+----
+
+You might notice that we use two things, `pulsemixer` that we installed earlier to interact with pulseaudio, and `dunstify`.
+
+=== dunstify
+`dunstify` is a tool similar to `notify-send`, just specific to dunst and with some extra features. +
+Unfortunately it's not available in the repos and it doesn't come with dunst so we will have to build it ourselves. 
+
+.Luckily it's very easy and fast to do:
+[source,shell]
+$ # First install its dependencies
+$ sudo apt install libdbus-1-dev libx11-dev libxinerama-dev libxrandr-dev libxss-dev libglib2.0-dev libpango1.0-dev libgtk-3-dev libxdg-basedir-dev libnotify-dev
+$ # I like to clone and build everything from github in a specific place: 
+$ mkdir ~/build
+$ cd ~/build
+$ git clone https://github.com/dunst-project/dunst.git
+$ cd dunst
+$ make dunstify
+$ cp -vs $(pwd)/dunstify ~/.local/bin/
+
+And done, now you have `dunstify`.
+
+== Bring Everything Together
+All the pieces are now in place, we just have to put them together.
+
+When you log in a few things happen. Specifically a script named `.profile` located in your home directory gets executed. We are going to take advantage of that by telling it to run a command, `startx`. This command starts the X server and runs another script `.xinitrc`, also located in your home directory.
+
+=== .profile
+.Enough with the words, lets actually do the work:
+[source, shell]
+$ vim ~/.profile
+
+.You will see that the profile is not empty, we just want to append something at the end of it, specifically this:
+[source, shell]
+if  [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
+    startx
+fi
+
+This means that if there is a display connected and we are in tty1, then run `startx`. +
+
+=== .xinitrc
+.Like I Said `startx` run a script called `.xinitrc`, so lets write that next:
+[source, shell] 
+$ vim ~/.xinitrc
+
+.And enter the following:
+[source, shell]
+----
+#!/bin/sh
+
+[ -f /etc/xprofile ] && . /etc/xprofile
+[ -f ~/.xprofile ] && . ~/.xprofile
+
+xset -dpms
+xset s off
+xset s noblank
+
+# No warnings about chromium crashing
+sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' /home/pi/.config/chromium/Default/Preferences
+sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' /home/pi/.config/chromium/Default/Preferences
+
+while true; do
+    chromium-browser --window-size=1920,1080 --window-position=0,0 --disable-translate --disable-features=TranslateUI --enable-widevine --password-store=basic --user-agent="Mozilla/5.0 (X11; CrOS armv7l 12371.89.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36"
+done
+----
+
+.There are a few things going on here so lets go step by step:
+[source, shell]
+[ -f /etc/xprofile ] && . /etc/xprofile
+[ -f ~/.xprofile ] && . ~/.xprofile
+
+This checks if two files exist (`/etc/xprofile` and `~/.xprofile`), and if they exists runs them. We will take advantage of this in a bit to auto start some things.
+
+[source, shell]
+xset -dpms
+xset s off
+xset s noblank
+
+This disables the energy features of the X server, specifically it makes the screen stay on and not black out after some time.
+
+[source, shell]
+----
+# No warnings about chromium crashing
+sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' /home/pi/.config/chromium/Default/Preferences
+sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' /home/pi/.config/chromium/Default/Preferences
+----
+Like the comment says, this stops chromium from complaining about not closing properly (for example if you take the Pi out of power while the browser is running).
+
+[source, shell]
+----
+while true; do
+    chromium-browser --window-size=1920,1080 --window-position=0,0 --disable-translate --disable-features=TranslateUI --enable-widevine --password-store=basic --user-agent="Mozilla/5.0 (X11; CrOS armv7l 12371.89.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36"
+done
+----
+This runs chromium in a loop. It's in a loop so that if you accidentally close all the tabs, the browser will just start again instead of dropping you to a terminal.
+
+TIP: If you need to access a terminal but can't because the browser is running, use `ctrl + alt + f2` to go to the second tty and log in
+
+.Now lets take a look at some of the arguments we passed at it:
+* `--window-size`: The size the browser will have. My TV is 1920x1080 but you should set it to your display's resolution
+* `--window-position=0,0`: I found that by default it doesn't start at the top left corner, so this fixes that
+* `--disable-translate` and `--disable-features=TranslateUI`: I find annoying the constant offering of translating sites so this turns that off
+* `--user-agent`: You might find this weird but it's necessary for viewing DRM protected content. It essentially makes chromium think it's running under ChromeOS
+
+=== .xprofile
+`.xprofile` is similar to `.profile` but instead of runs when the X server starts (well, we made it start in .xinitrc)
+
+[source, shell]
+$ vim ~/.xprofile
+
+.And we just want to start a few of the programs we installed earlier:
+[source, shell]
+----
+#!/bin/sh
+
+dunst &
+sxhkd &
+unclutter -idle 0.5 -root &
+----
+
+NOTE: You might notice the following `&` after each line. +
+This is so it starts the program and then moves on to the next one, it doesn't wait for the program to end because in this case they never will
+
+NOTE: `unclutter -idle 0.5 -root` means that after 0.5 seconds of idling the cursor will disappear even if it's over the root window (meaning not over chromium)
+
+== Smooth playback
+We are almost ready, one issue is that if you try to run chromium and watch something now, it will have a lot of screen tearing. Luckily the fix (although not perfect) is easy. +
+
+.First of all we want to run raspi-config and disable the compositor:
+`sudo raspi-config` -> `Advanced Options` -> `Compositor` -> "No"
+
+Then reboot to apply the setting update. +
+Once the Pi boots it should auto start chromium and everything else we told it too. +
+To improve the playback a bit more install https://chrome.google.com/webstore/detail/h264ify/aleakchihdccplidncghkekgioiakgal[this] extension, then find it on the top right and enable `Block 60fps`
+
+TIP: Now that we are here I also suggest https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm[this] for the ads, and https://chrome.google.com/webstore/detail/tabliss-a-beautiful-new-t/hipekcciheckooncpjeljhnekcoolahp[this] to make it a little prettier
+
+Congratulations! At this point you should be able to enjoy anything on the web with no issues. +
+
+NOTE: If you have no sound then either over ssh or on tty 2 run `pulsemixer` and change the audio output. +
+If you still don't have sound and you are using hdmi, for me only the port next to the power in had audio.
+
+== Spotify
+The other goal of this adventure is to be able to use spotify. +
+A very popular solution to this is to use https://github.com/dtcooper/raspotify[raspotify]. +
+I've used it in the past and it works really well but I decided to try something new: https://github.com/spocon/lovspotify[lovspotify].
+
+Lovspotify is very similar to raspotify, only that it also gives you a web interface which I thought might be nice, (and it is!)
+
+They even provide a one liner for easy installation, so just run +
+`curl -sL https://spocon.github.io/spocon/script/install_lovspotify.sh | sh`
+
+You can check that lovspotify is running using systemctl: +
+`systemctl status lovspotify`
+
+Now unfortunately I have found that this is not enough. +
+Since pulseaudio is a user service, it doesn't start system wide and it makes lovspotify not detect all the outputs. 
+If you are using the 3.5 jack as an output you might be okay with that, but I'm using the HDMI so I will have to fix this. 
+
+=== Fix lovspotify only outputting from the 3.5 jack
+
+.Essentially we need to make it a user service:
+[source, shell]
+----
+$ # Start by disabling it:
+$ sudo systemctl disable --now lovspotify
+$ # Next create the dir for the user services:
+$ mkdir -p ~/.config/systemd/user/
+$ cd ~/.config/systemd/user/
+$ vim lovspotify.service
+----
+
+.And this is what we want to write there:
+[source, shell]
+----
+[Unit]
+Description=lovspotify
+Wants=pulseaudio.service
+After=pulseaudio.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+PermissionsStartOnly=true
+WorkingDirectory=/opt/lovspotify
+ExecStartPre=/bin/sh -c 'until ping -c1 spotify.com; do sleep 5; done;'
+ExecStart=/usr/bin/java -Dspring.config.location=classpath:application.yml,file:///opt/lovspotify/gui.yml -jar /opt/lovspotify/lovspotify-1.5.4.jar --conf-file=/opt/lovspotify/config.toml
+
+[Install]
+WantedBy=default.target
+----
+
+If we try to start it now we will see an error. +
+The error is that lovspotify uses a directory for cache and the pi user doesn't have permission to use this directory. +
+To fix this start by creating a new directory in the home directory: +
+`mkdir -p ~/.cache/lovspotify`
+
+Next edit the config file and change the relevant setting +
+`sudo vim /opt/lovspotify/config.toml`
+
+NOTE: You need root access to edit this file so don't forget the `sudo`
+
+Change line 14 (under `cache`) to read `dir = "/home/pi/.cache/lovspotify"`
+
+You should also take a look at the rest of the settings here and even log in to your account.
+
+Next enable and start the service: +
+`systemctl enable --now lovspotify`
+
+And that should be it!
+
+One thing that I'd like to mention is that at first it was visible but I was unable to connect. Luckily this fixed it self after a few hours of me doing nothing.
+
+== Conclusion
+I have been using this set up for a couple of days now with no issues. +
+Netflix has a little screen tearing but nothign too bad so I am fine with it.
+
+If I find any issues or rough edges I plan to make follow up posts with fixes and improvments.
+
+If you are wondering what else you can do with your Raspberry, I suggest taking a look at https://pi-hole.net/[Pi-hole]. +
+It's super easy to install and it barely consumes any resources.
