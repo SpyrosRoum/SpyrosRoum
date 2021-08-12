@@ -30,7 +30,7 @@ paginate = 10
 
 [params]
   author = "Spyros Roum" # You can also set author in post front matter individually
-  subTitle = "I little blog about my projects and ideas"
+  subTitle = "A little blog about my projects and ideas"
 
   # Source URL of the website, will appear in the footer
   sourceURL = "https://github.com/SpyrosRoum/SpyrosRoum"
